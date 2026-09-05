@@ -6,7 +6,7 @@
 <style>
   body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
   h1 { font-size: 1.4em; }
-  textarea { width: 100%; height: 160px; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-family: monospace; }
+  textarea { width: 100%; height: 190px; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-family: monospace; }
   button { background: #238636; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 1em; cursor: pointer; margin-top: 10px; }
   pre { background: #161b22; padding: 15px; border-radius: 6px; white-space: pre-wrap; }
   label { display: block; margin-top: 10px; font-size: 0.9em; color: #8b949e; }
@@ -15,10 +15,12 @@
 <body>
 
 <h1>Case Timeline Builder — Live Demo</h1>
-<p>Paste sample notes below (one per line, format: <code>YYYY-MM-DDTHH:MM | note text</code>) and click Build. This runs entirely in your browser — nothing is uploaded or stored.</p>
+<p>Paste sample notes below (one per line, format: <code>YYYY-MM-DDTHH:MM | note text</code>) and click Build. Times are shown in your local timezone. This runs entirely in your browser — nothing is uploaded or stored.</p>
 
-<textarea id="input">2026-03-02T14:00 | Account opened online.
-2026-02-28T09:15 | Customer called support re: login issue.
+<textarea id="input">2026-02-28T09:15 | Customer called support re: login issue.
+2026-03-02T14:00 | Account opened online.
+2026-03-05T10:00 | Address change submitted online.
+2026-03-08T16:45 | New payee added to account.
 2026-03-10T11:30 | First outbound wire requested.</textarea>
 
 <label>Flag gaps larger than (hours):</label>
@@ -29,6 +31,11 @@
 <pre id="output"></pre>
 
 <script>
+function formatLocal(dt) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
 function build() {
   const lines = document.getElementById('input').value.trim().split("\n");
   const gapHours = parseFloat(document.getElementById('gap').value) || 48;
@@ -43,8 +50,7 @@ function build() {
   let out = "# Case Timeline\n\n";
   let prev = null;
   events.forEach((e, i) => {
-    const stamp = e.dt.toISOString().slice(0,16).replace('T', ' ');
-    out += `${i+1}. ${stamp} — ${e.note}\n`;
+    out += `${i+1}. ${formatLocal(e.dt)} — ${e.note}\n`;
     if (prev) {
       const gap = (e.dt - prev) / 3600000;
       if (gap >= gapHours) {
