@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Timeline Builder</title>
+<style>
+:root{
+  --bg:#EEF2EF; --ink:#142019; --muted:#5B665F; --faint:#666E68;
+  --border:#DCE3DD; --border-strong:#C3CDC5; --card:#FFFFFF; --field:#EEF2EF;
+  --accent:#2F6F4E; --accent-hover:#26593F; --accent-active:#1F4A34; --link:#2A5C8A;
+  --warning:#9B600A; --radius:12px; --radius-sm:8px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:840px;margin:0 auto;padding:40px 20px 64px;}
+h1{font-size:24px;font-weight:700;margin:0 0 8px;letter-spacing:-.01em;color:var(--ink);}
+p.lede{font-size:14px;color:var(--muted);margin:0 0 28px;max-width:64ch;}
+h2.section{font-size:15px;font-weight:700;margin:28px 0 12px;color:var(--ink);}
+h2.section:first-of-type{margin-top:0;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;}
+.field{margin-bottom:16px;}
+.field:last-child{margin-bottom:0;}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:0 0 6px;}
+textarea{
+  width:100%;height:190px;font-family:var(--mono);font-size:13px;color:var(--ink);
+  background:var(--field);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;resize:vertical;transition:border-color .15s,box-shadow .15s;
+}
+textarea::placeholder{color:var(--faint);}
+textarea:focus,input:focus{outline:none;border-color:var(--link);box-shadow:0 0 0 3px rgba(88,166,255,.15);}
+.gap-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.gap-row label{margin:0;}
+input[type=number]{
+  width:90px;font-family:var(--sans);font-size:14px;color:var(--ink);
+  background:var(--field);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;
+}
+.btn{appearance:none;border:none;background:var(--accent);color:#fff;font-family:var(--sans);
+  font-size:14px;font-weight:600;padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;}
+.btn:hover{background:var(--accent-hover);}
+.btn:active{background:var(--accent-active);}
+.btn:focus-visible{outline:2px solid var(--link);outline-offset:2px;}
+.btn-row{margin-top:16px;}
+pre.output{background:var(--field);border:1px solid var(--border);padding:16px;border-radius:var(--radius);
+  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;font-size:13px;font-family:var(--mono);
+  color:var(--ink);margin:0;}
+.sample-note{font-size:12px;color:var(--faint);margin:8px 0 0;}
+.sample-note a{font-weight:600;}
+
+.tl-empty{color:var(--muted);font-size:13.5px;padding:8px 2px;}
+.tl-error{background:var(--danger-bg);color:var(--danger);border:1px solid #E9C3BC;border-radius:var(--radius-sm);
+  padding:10px 14px;font-size:13px;margin-bottom:14px;}
+.tl-error ul{margin:6px 0 0;padding-left:18px;}
+
+.timeline-vis{list-style:none;margin:0;padding:0;border-left:2px solid var(--border);margin-left:14px;}
+.timeline-vis li{position:relative;padding:0 0 22px 26px;}
+.timeline-vis li:last-child{padding-bottom:0;}
+.timeline-vis .marker{
+  position:absolute;left:-27px;top:0;width:26px;height:26px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;border:3px solid var(--card);
+}
+.timeline-vis .tv-time{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 3px;}
+.timeline-vis .tv-note{font-size:13.5px;color:var(--ink);margin:0;overflow-wrap:anywhere;}
+.timeline-vis .tv-gap{
+  margin:8px 0 0;font-size:12.5px;color:var(--warning);background:var(--warning-bg);
+  border:1px solid #E9CBAE;border-radius:var(--radius-sm);padding:6px 10px;display:inline-block;
+}
+.timeline-vis .tv-unknown-time{color:var(--faint);font-style:italic;}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.tool-card{display:flex;flex-direction:column;gap:3px;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px;text-decoration:none;color:var(--ink);
+  transition:border-color .15s,box-shadow .15s,transform .15s;}
+.tool-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(47,111,78,.12);transform:translateY(-1px);}
+.tool-card-name{font-size:13.5px;font-weight:700;color:var(--accent);}
+.tool-card-name::after{content:" \2197";font-weight:600;}
+.tool-card-desc{font-size:12px;color:var(--muted);}
+footer.tools-nav{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);}
+footer.tools-nav .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);margin-bottom:12px;}
+@media (max-width:480px){
+  .wrap{padding:28px 16px 48px;}
+  h1{font-size:21px;}
+  .btn-row .btn{width:100%;text-align:center;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Case Timeline Builder</h1>
+  <p class="lede">Turns raw, unordered case notes into a clean, numbered, chronological
+    timeline and flags unusually large gaps between entries. Paste notes the way you'd
+    actually write them — it tolerates varied date formats and separators, not one rigid
+    template. Times are shown in your local timezone.</p>
+
+  <h2 class="section">Case Notes</h2>
+  <div class="card">
+    <div class="field">
+      <label for="input">One event per line, in whatever shorthand you normally use</label>
+      <textarea id="input" placeholder="8/28 6:41pm - password reset via self-service
+8/30 12:18am - two-factor method changed from SMS to email
+8/30 12:24am login succeeded from a foreign IP shortly after the 2FA change
+Aug 31, 2026 9:40am: new external payee added to account
+8/31/2026 10:15am — outbound withdrawal request submitted to the new payee"></textarea>
+      <p class="sample-note">Each line should start with a date (e.g. <code>8/28</code>, <code>8/28/2026</code>,
+        or <code>Aug 28, 2026</code>) and, optionally, a time (e.g. <code>6:41pm</code> or <code>18:41</code>) —
+        a dash, colon, comma, or just a space can separate the timestamp from the note. Oldest or newest
+        first, either way; they're sorted automatically.
+        <a href="#" onclick="loadSample(); return false;" style="color:var(--link);">Load sample notes</a> to try it out.</p>
+    </div>
+
+    <div class="field">
+      <div class="gap-row">
+        <label for="caseyear">Case year (used when a line's date has no year):</label>
+        <input id="caseyear" type="number" value="2026" min="1900" max="2100">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="gap-row">
+        <label for="gap">Flag gaps larger than this many hours:</label>
+        <input id="gap" type="number" value="48" min="0">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="build()">Build Timeline</button>
+    </div>
+  </div>
+
+  <h2 class="section">Timeline</h2>
+  <div class="card">
+    <div id="output"></div>
+  </div>
+
+  <footer class="tools-nav">
+    <div class="label">More tools</div>
+    <div class="tools-grid">
+    <a class="tool-card" href="https://biancabcarlson.github.io/Case-Calculator/" target="_blank" rel="noopener">
+      <span class="tool-card-name">Case Calculator</span>
+      <span class="tool-card-desc">Check the withdrawal/exposure math</span>
+    </a>
+    <a class="tool-card" href="https://biancabcarlson.github.io/Report-Template-Filler/" target="_blank" rel="noopener">
+      <span class="tool-card-name">Report Template Filler</span>
+      <span class="tool-card-desc">Write up the findings</span>
+    </a>
+    <a class="tool-card" href="https://biancabcarlson.github.io/OSINT-Tool/" target="_blank" rel="noopener">
+      <span class="tool-card-name">OSINT Tool</span>
+      <span class="tool-card-desc">Look up the new payee / beneficiary name</span>
+    </a>
+    <a class="tool-card" href="https://biancabcarlson.github.io/Case-Doc-Tracker/" target="_blank" rel="noopener">
+      <span class="tool-card-name">Case Doc Tracker</span>
+      <span class="tool-card-desc">Track what's still needed for this case</span>
+    </a>
+    <a class="tool-card" href="https://biancabcarlson.github.io/Entity-Name-Matcher/" target="_blank" rel="noopener">
+      <span class="tool-card-name">Entity Name Matcher</span>
+      <span class="tool-card-desc">Check name variants against past cases</span>
+    </a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
+
+function twoDigitYear(y) {
+  y = parseInt(y, 10);
+  if (y < 100) return y < 70 ? 2000 + y : 1900 + y;
+  return y;
+}
+
+function to24Hour(h, ampm) {
+  h = parseInt(h, 10);
+  if (!ampm) return h;
+  const isPM = /p/i.test(ampm);
+  if (h === 12) return isPM ? 12 : 0;
+  return isPM ? h + 12 : h;
+}
+
+function stripSeparator(s) {
+  return s.replace(/^[\s\-–—:|,.]+/, '');
+}
+
+// Parses a leading date (and optional time) off the start of a free-text
+// case-note line. Tolerates ISO (2026-08-28T18:41), US slash (8/28,
+// 8/28/2026, 8/28/26), and month-name (Aug 28, 2026 / August 28) formats,
+// each with an optional 12h (6:41pm) or 24h (18:41) time, separated from
+// the rest of the note by a dash, colon, comma, or nothing at all.
+function parseLine(line, defaultYear) {
+  let m;
+
+  m = line.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if (m) {
+    const [full, y, mo, d, h, mi] = m;
+    const dt = new Date(parseInt(y), parseInt(mo) - 1, parseInt(d), h ? parseInt(h) : 0, mi ? parseInt(mi) : 0);
+    return { dt, timeUnknown: h === undefined, rest: stripSeparator(line.slice(full.length)) };
+  }
+
+  m = line.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:[ ,]+(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)?)?/i);
+  if (m) {
+    const [full, mo, d, y, h, mi, ampm] = m;
+    const year = y ? twoDigitYear(y) : defaultYear;
+    const dt = new Date(year, parseInt(mo) - 1, parseInt(d), h ? to24Hour(h, ampm) : 0, mi ? parseInt(mi) : 0);
+    return { dt, timeUnknown: h === undefined, rest: stripSeparator(line.slice(full.length)) };
+  }
+
+  m = line.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?(?:[ ,]+(\d{1,2})(?::(\d{2}))?\s*([ap]\.?m\.?)?)?/i);
+  if (m) {
+    const [full, monStr, d, y, h, mi, ampm] = m;
+    const monKey4 = monStr.slice(0, 4).toLowerCase();
+    const monKey3 = monStr.slice(0, 3).toLowerCase();
+    const monKey = monKey4 in MONTHS ? monKey4 : monKey3;
+    if (!(monKey in MONTHS)) return null;
+    const year = y ? parseInt(y) : defaultYear;
+    const dt = new Date(year, MONTHS[monKey], parseInt(d), h ? to24Hour(h, ampm) : 0, mi ? parseInt(mi) : 0);
+    return { dt, timeUnknown: h === undefined, rest: stripSeparator(line.slice(full.length)) };
+  }
+
+  return null;
+}
+
+function formatLocal(dt, timeUnknown) {
+  const pad = n => String(n).padStart(2, '0');
+  const datePart = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  return timeUnknown ? datePart : `${datePart} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function build() {
+  const rawLines = document.getElementById('input').value.split("\n").map(l => l.trim()).filter(l => l.length);
+  const gapHours = parseFloat(document.getElementById('gap').value) || 48;
+  const defaultYear = parseInt(document.getElementById('caseyear').value, 10) || new Date().getFullYear();
+  const output = document.getElementById('output');
+
+  if (!rawLines.length) {
+    output.innerHTML = '<p class="tl-empty">Enter at least one event above, then click Build Timeline.</p>';
+    return;
+  }
+
+  const events = [];
+  const malformed = [];
+
+  rawLines.forEach((line, i) => {
+    const parsed = parseLine(line, defaultYear);
+    if (!parsed || isNaN(parsed.dt)) {
+      malformed.push(`Line ${i + 1}: couldn't find a date at the start of this line — "${esc(line)}"`);
+      return;
+    }
+    if (!parsed.rest) {
+      malformed.push(`Line ${i + 1}: no note text after the timestamp`);
+      return;
+    }
+    events.push({ dt: parsed.dt, timeUnknown: parsed.timeUnknown, note: parsed.rest });
+  });
+
+  let errorHtml = "";
+  if (malformed.length) {
+    errorHtml = `<div class="tl-error">${malformed.length} line${malformed.length > 1 ? "s" : ""} could not be parsed and ${malformed.length > 1 ? "were" : "was"} skipped:
+      <ul>${malformed.map(m => `<li>${m}</li>`).join("")}</ul></div>`;
+  }
+
+  if (!events.length) {
+    output.innerHTML = errorHtml + '<p class="tl-empty">No valid events to build a timeline from — check the format above.</p>';
+    return;
+  }
+
+  events.sort((a, b) => a.dt - b.dt);
+
+  const rows = events.map((e, i) => {
+    let gapHtml = "";
+    if (i > 0) {
+      const gap = (e.dt - events[i - 1].dt) / 3600000;
+      if (gap >= gapHours) {
+        const approxNote = (e.timeUnknown || events[i - 1].timeUnknown) ? " (approximate — one of these entries has no time, just a date)" : "";
+        gapHtml = `<div class="tv-gap">⚠ Gap of ${gap.toFixed(1)} hours since previous entry${approxNote}</div>`;
+      }
+    }
+    const timeLabel = e.timeUnknown
+      ? `<p class="tv-time tv-unknown-time">${formatLocal(e.dt, true)} · time not specified</p>`
+      : `<p class="tv-time">${formatLocal(e.dt, false)}</p>`;
+    return `<li>
+      <span class="marker">${i + 1}</span>
+      ${timeLabel}
+      <p class="tv-note">${esc(e.note)}</p>
+      ${gapHtml}
+    </li>`;
+  }).join("");
+
+  output.innerHTML = errorHtml + `<ul class="timeline-vis">${rows}</ul>`;
+}
+
+function loadSample() {
+  document.getElementById('input').value =
+`8/28 6:41pm - password reset via self-service
+8/30 12:18am - two-factor method changed from SMS to email
+8/30 12:24am login succeeded from a foreign IP shortly after the 2FA change
+Aug 31, 2026 9:40am: new external payee added to account
+8/31/2026 10:15am — outbound withdrawal request submitted to the new payee`;
+  build();
+}
+
+document.getElementById('output').innerHTML = '<p class="tl-empty">Enter at least one event above, then click Build Timeline.</p>';
+</script>
+
+</body>
+</html>
