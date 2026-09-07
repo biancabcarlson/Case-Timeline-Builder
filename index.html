@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Case Timeline Builder</title>
+<style>
+:root{
+  --bg:#0B0F19;
+  --ink:#E2E8F0;
+  --muted:#94A3B8;
+  --faint:#64748B;
+  --border:#334155;
+  --border-strong:#475569;
+  --card:#1E293B;
+  --field:#0F172A;
+  --accent:#3B82F6;
+  --accent-hover:#2563EB;
+  --accent-active:#1D4ED8;
+  --accent-bg:rgba(59,130,246,.14);
+  --link:#60A5FA;
+  --danger:#EF4444;
+  --danger-bg:rgba(239,68,68,.14);
+  --danger-border:rgba(239,68,68,.35);
+  --warning:#F59E0B;
+  --warning-bg:rgba(245,158,11,.14);
+  --warning-border:rgba(245,158,11,.35);
+  --success:#10B981;
+  --success-bg:rgba(16,185,129,.14);
+  --success-border:rgba(16,185,129,.35);
+  --radius:8px;
+  --radius-sm:6px;
+  --focus-ring:rgba(59,130,246,.35);
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 20px 64px;}
+h1{font-size:24px;font-weight:700;margin:0 0 8px;letter-spacing:-.01em;color:var(--ink);}
+p.lede{font-size:14px;color:var(--muted);margin:0 0 28px;max-width:64ch;}
+h2.section{font-size:15px;font-weight:700;margin:28px 0 12px;color:var(--ink);}
+h2.section:first-of-type{margin-top:0;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;}
+.field{margin-bottom:16px;}
+.field:last-child{margin-bottom:0;}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:0 0 6px;}
+textarea{
+  width:100%;height:190px;font-family:var(--mono);font-size:13px;color:var(--ink);
+  background:var(--field);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;resize:vertical;transition:border-color .15s,box-shadow .15s;
+}
+textarea::placeholder{color:var(--faint);}
+textarea:focus,input:focus{outline:none;border-color:var(--link);box-shadow:0 0 0 3px var(--focus-ring);}
+.gap-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.gap-row label{margin:0;}
+input[type=number]{
+  width:90px;font-family:var(--sans);font-size:14px;color:var(--ink);
+  background:var(--field);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;
+}
+.range-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.range-row label{margin:0;font-size:13px;font-weight:600;color:var(--ink);}
+input[type=date]{
+  font-family:var(--sans);font-size:14px;color:var(--ink);color-scheme:dark;
+  background:var(--field);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;
+}
+.range-hint{font-size:12px;color:var(--faint);margin:6px 0 0;}
+.btn{appearance:none;border:none;background:var(--accent);color:#fff;font-family:var(--sans);
+  font-size:14px;font-weight:600;padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;}
+.btn:hover{background:var(--accent-hover);}
+.btn:active{background:var(--accent-active);}
+.btn:focus-visible{outline:2px solid var(--link);outline-offset:2px;}
+.btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--border);}
+.btn.secondary:hover{background:var(--accent-bg);border-color:var(--border-strong);}
+.btn-row{margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.msg{font-size:13px;display:none;}
+.msg.show{display:block;}
+.msg.error{color:var(--danger);margin-top:8px;}
+.msg.success{color:var(--success);font-weight:600;}
+input[type=text],textarea#noteInput{
+  width:100%;font-family:var(--sans);font-size:14px;color:var(--ink);
+  background:var(--field);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:9px 12px;transition:border-color .15s,box-shadow .15s;
+}
+input[type=text]:focus,textarea#noteInput:focus{outline:none;border-color:var(--link);box-shadow:0 0 0 3px var(--focus-ring);}
+pre.output{background:var(--field);border:1px solid var(--border);padding:16px;border-radius:var(--radius);
+  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;font-size:13px;font-family:var(--mono);
+  color:var(--ink);margin:0;}
+.sample-note{font-size:12px;color:var(--faint);margin:8px 0 0;}
+.sample-note a{font-weight:600;}
+
+.tl-empty{color:var(--muted);font-size:13.5px;padding:8px 2px;}
+.tl-error{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border);border-radius:var(--radius-sm);
+  padding:10px 14px;font-size:13px;margin-bottom:14px;}
+.tl-error ul{margin:6px 0 0;padding-left:18px;}
+
+.timeline-vis{list-style:none;margin:0;padding:0;position:relative;margin-left:14px;}
+.timeline-vis::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--border);
+}
+.timeline-vis li{position:relative;padding:0 0 22px 26px;}
+.timeline-vis li:last-child{padding-bottom:0;}
+.timeline-vis .marker{
+  position:absolute;left:-13px;top:0;width:26px;height:26px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:11px;font-weight:700;z-index:1;
+  display:flex;align-items:center;justify-content:center;border:3px solid var(--card);
+}
+.timeline-vis .marker svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.timeline-vis .tv-time{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 3px;}
+.timeline-vis .tv-note{font-size:13.5px;color:var(--ink);margin:0;overflow-wrap:anywhere;}
+.timeline-vis .tv-unknown-time{color:var(--faint);font-style:italic;}
+
+/* ---- inactivity gap: shaded segment on the connecting line — kept subtle,
+   amber rather than red, so it reads as a notice rather than an alarm ---- */
+.timeline-vis .tv-gap-shade{
+  position:absolute;left:-4px;top:-22px;width:8px;height:22px;z-index:0;
+  background-color:rgba(245,158,11,.10);
+  background-image:repeating-linear-gradient(45deg,rgba(245,158,11,.28) 0,rgba(245,158,11,.28) 2px,transparent 2px,transparent 6px);
+}
+.timeline-vis .tv-gap-label{
+  margin:0 0 6px;font-size:12px;font-weight:600;color:var(--warning);display:inline-block;
+}
+@media (max-width:480px){
+  .wrap{padding:28px 16px 48px;}
+  h1{font-size:21px;}
+  .btn-row .btn{width:100%;text-align:center;}
+}
+
+/* =====================================================================
+   SHARED PLATFORM CHROME — top navigation, case bar, footer, and
+   cross-tool component polish. Added as part of the suite-wide visual
+   pass; does not touch any tool's calculation or parsing logic.
+===================================================================== */
+html{background:var(--bg);}
+::selection{background:var(--accent-bg);color:var(--ink);}
+a{color:var(--link);}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
+[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+input[type=checkbox]{accent-color:var(--accent);}
+
+/* ---- top navigation ---- */
+.topnav{background:var(--card);border-top:1px solid var(--border);border-bottom:none;}
+.topnav-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:2px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 8px;}
+.topnav-inner::-webkit-scrollbar{display:none;}
+.topnav-item{display:flex;align-items:center;gap:7px;flex:none;white-space:nowrap;
+  padding:0 14px;min-height:48px;font-family:var(--sans);font-size:13px;font-weight:600;
+  color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s,background .15s;}
+.topnav-item svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;}
+.topnav-item:hover{color:var(--ink);background:rgba(255,255,255,.03);}
+.topnav-item.active{color:var(--accent);border-bottom-color:var(--accent);cursor:default;}
+.topnav-item.active:hover{background:none;}
+
+/* ---- universal case header ---- */
+.case-bar{background:var(--card);border-bottom:1px solid var(--border);}
+.case-bar-inner{max-width:1080px;margin:0 auto;padding:9px 20px;display:flex;align-items:center;
+  gap:9px;flex-wrap:wrap;font-size:12.5px;}
+.case-id-label{font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--faint);text-transform:uppercase;}
+.case-id{font-family:var(--mono);font-weight:700;color:var(--ink);font-size:13px;letter-spacing:.01em;}
+.case-bar-sep{color:var(--border-strong);}
+.case-bar-detail{color:var(--muted);font-family:var(--mono);font-size:12px;}
+@media (max-width:600px){
+  .case-bar-sep,.case-bar-detail,.case-bar-flag{display:none;}
+  .case-bar-inner{padding:8px 16px;}
+}
+
+/* ---- generic status badge system (in addition to each tool's own) ---- */
+.badge{border-radius:20px;}
+.badge.alert{background:var(--danger-bg);color:var(--danger);}
+.badge.warn{background:var(--warning-bg);color:var(--warning);}
+.badge.good{background:var(--success-bg);color:var(--success);}
+.badge.info{background:var(--accent-bg);color:var(--accent);}
+
+/* ---- demo footer (replaces per-page "More tools" footer) ---- */
+.demo-footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);
+  font-size:11.5px;color:var(--faint);text-align:center;opacity:.75;}
+
+/* ---- misc hardening ---- */
+body{overflow-x:hidden;}
+.wrap{width:100%;}
+table{min-width:0;}
+button,.btn,.btn-sm,.status-btn,.open-link,select,.reveal-btn,.resolve-btn{min-height:44px;}
+
+/* ---- two-column desktop input/output layout (shared) ---- */
+.io-grid{display:flex;gap:20px;align-items:flex-start;}
+.io-grid>*{flex:1 1 0;min-width:0;margin:0;}
+@media (max-width:900px){
+  .io-grid{flex-direction:column;}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Case Timeline Builder</h1>
+  <p class="lede">Add investigator notes below — available timestamps are pulled automatically and added to the timeline.</p>
+
+  <div class="io-grid">
+    <div>
+    <h2 class="section">Case Notes</h2>
+    <div class="card">
+    <div class="field">
+      <input type="text" id="noteInput" aria-label="New note" placeholder="e.g. Unusual login activity coming from Bucharest, RO" onkeydown="if(event.key==='Enter'){event.preventDefault();addNote();}">
+      <div class="msg error" id="noteError"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="addNote()">Add to Timeline</button>
+    </div>
+
+    <div class="field" style="margin-top:20px;">
+      <label>Timeline range</label>
+      <div class="range-row">
+        <label for="rangeStart">From</label>
+        <input id="rangeStart" type="date" value="2026-08-29" oninput="render()">
+        <label for="rangeEnd">To</label>
+        <input id="rangeEnd" type="date" value="2026-08-31" oninput="render()">
+      </div>
+      <p class="range-hint">Prefilled to the suspected fraud dates — widen it to bring earlier account history into view.</p>
+    </div>
+
+    <div class="field" style="margin-top:20px;">
+      <div class="gap-row">
+        <label for="gap">Flag gaps exceeding (days):</label>
+        <input id="gap" type="number" value="2" min="0" step="0.5" oninput="render()">
+      </div>
+    </div>
+    </div>
+    </div>
+
+    <div>
+    <h2 class="section">Timeline</h2>
+    <div class="card">
+      <div id="output"></div>
+      <div class="btn-row">
+        <button class="btn secondary" onclick="copyTimeline()">Copy Timeline</button>
+        <span class="msg success" id="copiedMsg">Copied ✓</span>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <footer class="demo-footer">Simulated Tool&mdash; for demo purposes only.</footer>
+
+</div>
+<nav class="topnav" aria-label="Investigation tools"><div class="topnav-inner"><a class="topnav-item" href="https://biancabcarlson.github.io/Simulated-Account/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 10v9h14v-9"/><path d="M10 19v-6h4v6"/></svg><span>Account</span></a><a class="topnav-item" href="https://biancabcarlson.github.io/Case-Calculator/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="17"/><line x1="8" y1="17.5" x2="8" y2="17.5"/><line x1="12" y1="17.5" x2="12" y2="17.5"/></svg><span>Calculator</span></a><span class="topnav-item active" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><span>Timeline</span></span><a class="topnav-item" href="https://biancabcarlson.github.io/OSINT-Tool/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.3" y1="15.3" x2="21" y2="21"/></svg><span>OSINT</span></a><a class="topnav-item" href="https://biancabcarlson.github.io/Entity-Name-Matcher/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9" r="2.6"/><path d="M2.5 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M14.5 14.8c2.6.3 4.5 2.2 4.5 5.2"/></svg><span>Name Matcher</span></a><a class="topnav-item" href="https://biancabcarlson.github.io/Report-Template-Filler/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><line x1="9.5" y1="13" x2="15.5" y2="13"/><line x1="9.5" y1="16.5" x2="15.5" y2="16.5"/></svg><span>Report</span></a><a class="topnav-item" href="https://biancabcarlson.github.io/Case-Doc-Tracker/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Documents</span></a></div></nav>
+
+<script>
+function formatLocal(dt, timeUnknown) {
+  const pad = n => String(n).padStart(2, '0');
+  const datePart = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  return timeUnknown ? datePart : `${datePart} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* Compact icons for a few recognizable event types. Detection is keyword-based
+   on the note text only. */
+const EVENT_ICONS = [
+  { test: /foreign ip/i,
+    svg: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>' },
+  { test: /two-factor|\b2fa\b|security question|password reset/i,
+    svg: '<svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>' },
+  { test: /mobile app|mobile access|via mobile/i,
+    svg: '<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>' },
+];
+function iconForNote(note) {
+  const hit = EVENT_ICONS.find(e => e.test.test(note));
+  return hit ? hit.svg : null;
+}
+
+/* Pre-generated from this case's account history — this is the data the
+   investigator's own notes below get merged into. Not user-editable text;
+   dates/times are real Date objects, not parsed strings. */
+const ACCOUNT_HISTORY = [
+  { dt: new Date(2025, 0, 14, 15, 41), note: 'Account created — opened via mobile app, referral code EB-2025' },
+  { dt: new Date(2025, 0, 14, 15, 55), note: 'Identity verification completed — KYC passed via document + selfie match' },
+  { dt: new Date(2025, 0, 16, 10, 2), note: 'ACH bank account linked — Chase Checking •••4821, set as default' },
+  { dt: new Date(2025, 5, 3, 13, 40), note: 'Mailing address updated — 118 Elm St, Oakland, CA → 42 Bayview Ter, San Francisco, CA' },
+  { dt: new Date(2025, 7, 19, 8, 9), note: 'Email address changed — j.doe88@example.com → jane.doe@example.com' },
+  { dt: new Date(2025, 7, 19, 8, 14), note: 'Two-factor authentication enabled — method: SMS' },
+  { dt: new Date(2025, 10, 2, 11, 27), note: 'Second ACH bank account linked — Ally Bank Savings •••7790' },
+  { dt: new Date(2026, 1, 8, 16, 52), note: 'Security question reset — initiated after failed login attempts' },
+  { dt: new Date(2026, 2, 22, 9, 18), note: 'Beneficiary added — "M. Doe" added as payable-on-death beneficiary' },
+  { dt: new Date(2026, 6, 30, 14, 3), note: 'Phone number updated — (415) 555-0119 → (415) 555-0148' },
+  { dt: new Date(2026, 7, 28, 18, 41), note: 'Password reset via self-service' },
+  { dt: new Date(2026, 7, 30, 0, 18), note: 'Two-factor method changed — SMS → Email, temporary, self-service' },
+  { dt: new Date(2026, 7, 30, 0, 24), note: 'Login succeeded from a foreign IP (Bucharest, RO; Windows, Chrome 128) shortly after the 2FA change — device not trusted' },
+  { dt: new Date(2026, 7, 31, 9, 40), note: 'External payee added — Marcus T., account ending 1187' },
+  { dt: new Date(2026, 7, 31, 0, 0), note: 'ACH withdrawal request submitted to the new payee — $4,800.00, Ref ACH-88300, pending', timeUnknown: true },
+  { dt: new Date(2026, 7, 31, 0, 0), note: 'Crypto withdrawal request submitted to a new wallet not on the allowlist — $4,590.00 (0.0680 BTC)', timeUnknown: true },
+];
+
+let events = ACCOUNT_HISTORY.map(e => ({ ...e }));
+
+function addNote() {
+  const input = document.getElementById('noteInput');
+  const errorEl = document.getElementById('noteError');
+  errorEl.classList.remove('show');
+  errorEl.textContent = '';
+
+  const text = input.value.trim();
+  if (!text) {
+    errorEl.textContent = 'Enter a note before adding it to the timeline.';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  const newEvent = { dt: new Date(), timeUnknown: false, note: text };
+  events.push(newEvent);
+  input.value = '';
+  input.focus();
+
+  // Notes are timestamped to right now, which may fall outside the current
+  // range filter — widen the range rather than silently hiding the note.
+  const startEl = document.getElementById('rangeStart');
+  const endEl = document.getElementById('rangeEnd');
+  const noteDateStr = formatLocal(newEvent.dt, true);
+  if (endEl.value && noteDateStr > endEl.value) endEl.value = noteDateStr;
+  if (startEl.value && noteDateStr < startEl.value) startEl.value = noteDateStr;
+
+  render();
+}
+
+function render() {
+  const gapDays = parseFloat(document.getElementById('gap').value) || 0;
+  const output = document.getElementById('output');
+  const rangeStart = document.getElementById('rangeStart').value;
+  const rangeEnd = document.getElementById('rangeEnd').value;
+
+  const allSorted = events.slice().sort((a, b) => a.dt - b.dt);
+  const sorted = allSorted.filter(e => {
+    const d = formatLocal(e.dt, true);
+    if (rangeStart && d < rangeStart) return false;
+    if (rangeEnd && d > rangeEnd) return false;
+    return true;
+  });
+
+  if (!allSorted.length) {
+    output.innerHTML = '<p class="tl-empty">No events yet.</p>';
+    return;
+  }
+
+  if (!sorted.length) {
+    output.innerHTML = '<p class="tl-empty">No events in this date range — widen the range above to bring more history into view.</p>';
+    return;
+  }
+
+  const rows = sorted.map((e, i) => {
+    let gapShadeHtml = "", gapLabelHtml = "";
+    if (i > 0) {
+      const gap = (e.dt - sorted[i - 1].dt) / 86400000;
+      if (gap >= gapDays) {
+        const approxNote = (e.timeUnknown || sorted[i - 1].timeUnknown) ? " (approximate — one entry has no time, just a date)" : "";
+        const title = `Gap of ${gap.toFixed(1)} days since previous entry${approxNote}`;
+        gapShadeHtml = `<div class="tv-gap-shade" title="${esc(title)}"></div>`;
+        gapLabelHtml = `<span class="tv-gap-label" title="${esc(title)}">Gap of ${gap.toFixed(1)} days</span>`;
+      }
+    }
+    const icon = iconForNote(e.note);
+    const markerContent = icon || (i + 1);
+    const timeLabel = e.timeUnknown
+      ? `<p class="tv-time tv-unknown-time">${formatLocal(e.dt, true)} · time not specified</p>`
+      : `<p class="tv-time">${formatLocal(e.dt, false)}</p>`;
+    return `<li>
+      ${gapShadeHtml}
+      <span class="marker">${markerContent}</span>
+      ${gapLabelHtml}
+      ${timeLabel}
+      <p class="tv-note">${esc(e.note)}</p>
+    </li>`;
+  }).join("");
+
+  output.innerHTML = `<ul class="timeline-vis">${rows}</ul>`;
+}
+
+function copyTimeline() {
+  const rangeStart = document.getElementById('rangeStart').value;
+  const rangeEnd = document.getElementById('rangeEnd').value;
+  const sorted = events.slice().sort((a, b) => a.dt - b.dt).filter(e => {
+    const d = formatLocal(e.dt, true);
+    if (rangeStart && d < rangeStart) return false;
+    if (rangeEnd && d > rangeEnd) return false;
+    return true;
+  });
+  const text = sorted.map(e => `${formatLocal(e.dt, e.timeUnknown)} - ${e.note}`).join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const msg = document.getElementById('copiedMsg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 1500);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
